@@ -2,14 +2,14 @@
 """
 Created on Thu Mar 26 20:45:30 2020
 
-@author: dell
+@author: Samson
 """
 
 # -*- coding: utf-8 -*-
 """
 Created on Thu Mar 26 20:37:20 2020
 
-@author: dell
+@author: Samson
 """
 #import pygame
 import pyttsx3
@@ -363,150 +363,6 @@ def phonecall():
 
 
 
-def historical_price(Name):
-        speak("Please give me one more second while I try to fetch a few technical indicators for the company taking on the last 120 days")
-        url=('https://financialmodelingprep.com/api/v3/historical-price-full/'+Name+'')
-        res = requests.get(url)
-        
-        data = res.json()
-        data=data['historical'][-120:]
-        bs = pd.DataFrame.from_dict(data)
-        bs.set_index('date', inplace=True)
-       # print(bs.keys)
-        
-        #bs['close'].plot()
-    
-        
-        def cscheme(colors):
-            aliases = {
-                'BkBu': ['black', 'blue'],
-                'gr': ['green', 'red'],
-                'grays': ['silver', 'gray'],
-                'mas': ['black', 'green', 'orange', 'red'],
-            }
-            aliases['default'] = aliases['gr']
-            return aliases[colors]
-        
-        last_ = bs.shape[0]
-        price_size=(8, 6) 
-        
-        def machart(kind, fast, medium, slow, append=True, last=last_, figsize=price_size, colors=cscheme('mas')):
-            
-            title = kind
-            ma1 = bs.ta(kind=kind, length=fast, append=append)
-            ma2 = bs.ta(kind=kind, length=medium, append=append)
-            ma3 = bs.ta(kind=kind, length=slow, append=append)
-            
-            #figure1 = plt.Figure(figsize=(6,5), dpi=100)
-            #ax1 = figure1.add_subplot(111)
-            #bar1 = FigureCanvasTkAgg(figure1, tab3)
-            #bar1.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
-            madf = pd.concat([bs['close'], bs[[ma1.name, ma2.name, ma3.name]]], axis=1, sort=False).tail(last)
-            madf.plot(figsize=figsize, title=title, color=colors, grid=True) 
-            #ax1.set_title('MACD')
-    
-        def rsi_plot(bs):
-    
-            window_length=14
-            close = bs['close']
-            # Get the difference in price from previous step
-            delta = close.diff()
-            # Get rid of the first row, which is NaN since it did not have a previous 
-            # row to calculate the differences
-            delta = delta[1:] 
-            
-            # Make the positive gains (up) and negative gains (down) Series
-            up, down = delta.copy(), delta.copy()
-            up[up < 0] = 0
-            down[down > 0] = 0
-            
-            # Calculate the EWMA
-            roll_up1 = up.ewm(span=window_length).mean()
-            roll_down1 = down.abs().ewm(span=window_length).mean()
-            
-            # Calculate the RSI based on EWMA
-    #        RS1 = roll_up1 / roll_down1
-    #        RSI1 = 100.0 - (100.0 / (1.0 + RS1))
-            
-            # Calculate the SMA
-            roll_up2 = up.rolling(window_length).mean()
-            roll_down2 = down.abs().rolling(window_length).mean()
-            
-            # Calculate the RSI based on SMA
-            RS2 = roll_up2 / roll_down2
-            RSI2 = 100.0 - (100.0 / (1.0 + RS2))
-            
-            # Compare graphically
-            plt.figure(figsize=(8, 6))
-#            figure2 = plt.Figure(figsize=(6,5), dpi=100)
-#            ax2 = figure2.add_subplot(111)
-#            bar2 = FigureCanvasTkAgg(figure2, tab3)
-#            bar2.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
-            #RSI1.plot()
-            
-            RSI2.plot()
-            plt.legend(['RSI via SMA'])
-            plt.axhline(y=30,     color='red',   linestyle='-')
-            plt.axhline(y=70,     color='blue',  linestyle='-')
-            plt.show()
-            #ax2.set_title('RSI')
-        def macd(bs):        
-            recent=120
-            ind_size = (8, 6)
-            macddf = bs.ta.macd(fast=8, slow=21, signal=9, min_periods=None, append=True)
-           # print(macddf)
-            
-            macddf[[macddf.columns[0], macddf.columns[2]]].tail(recent).plot(figsize=(16, 2), color=cscheme('BkBu'), linewidth=1.3)
-           
-            macddf[macddf.columns[1]].tail(recent).plot.area(figsize=ind_size, stacked=False, color=['silver'], linewidth=1, title="macd", grid=True).axhline(y=0, color="black", lw=1.1)
-    
-        def aroon(bs):
-            arn=ta.aroon(bs['close'],length=None,offset=None)
-            
-            arn.plot()
-        
-        def bol_band(bs):
-            b=ta.bbands(bs['close'], length=None, std=None, mamode=None, offset=None)
-            bs['close'].plot()
-            b=pd.concat([bs['close'],b['BBL_20'],b['BBM_20'],b['BBU_20']], axis=1, sort=False)
-            
-            b.plot()
-            
-        def stochos(bs):
-            b=ta.stoch(bs['high'],bs['low'],bs['close'],fast_k=None, slow_k=None, slow_d=None, offset=None)
-            
-            b.plot()
-    
-        def chmf(bs):
-            b=ta.cmf(bs['high'],bs['low'],bs['close'],bs['volume'],bs['open'],length=None, offset=None)
-            
-            b.plot()
-     
-        def cdlp(bs):
-            bs = bs[['open', 'high', 'low', 'close']]
-            bs.reset_index(level=0, inplace=True) 
-            #print(bs)
-            bs['date'] = bs['date'].map(mdates.datestr2num)
-           # df['Date'] = df['Date'].map(mdates.date2num)
-            
-            ax = plt.subplot()
-            candlestick_ohlc(ax,bs.values, width=5, colorup='g', colordown='r')
-            ax.xaxis_date()
-            ax.grid(True)
-            
-            plt.show()
-        #plt.subplots(3,3) 
-        
-        rsi_plot(bs)
-        machart('ema', 8, 21, 50, last=120)
-        machart('sma',8, 21, 50, last=120)
-        macd(bs)
-        #aroon(bs)
-        bol_band(bs)   
-        #stochos(bs)
-        #chmf(bs)
-       # cdlp(bs)    
-
 
 
 if __name__ == "__main__":
@@ -730,7 +586,7 @@ if __name__ == "__main__":
             print(tck)
             company_profile(tck)
             financial_summary(tck)
-            historical_price(tck)
+            
             
         elif "phone call" in query:
             speak("dialing in")
